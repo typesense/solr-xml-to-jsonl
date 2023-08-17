@@ -49,11 +49,31 @@ function convertToNativeValue(value) {
 }
 
 async function writeJsonl(jsonData) {
-  const jsonArray = jsonData.add.docs[0].doc.map((doc) =>
-    Object.fromEntries(
-      doc.field.map((f) => [f.$.name, convertToNativeValue(f._)]),
-    ),
-  );
+  const jsonArray = jsonData.add.docs[0].doc.map((doc) => {
+    const transformedEntries = doc.field.map((f) => [
+      f.$.name,
+      convertToNativeValue(f._),
+    ]);
+
+    const transformedObjectWithArraysHandled = {};
+
+    // If there are any repeated fields, then convert them into an array value
+    for (const [key, value] of transformedEntries) {
+      if (transformedObjectWithArraysHandled[key] === undefined) {
+        transformedObjectWithArraysHandled[key] = value;
+      } else {
+        if (Array.isArray(transformedObjectWithArraysHandled[key])) {
+          transformedObjectWithArraysHandled[key].push(value);
+        } else {
+          transformedObjectWithArraysHandled[key] = [
+            transformedObjectWithArraysHandled[key],
+            value,
+          ];
+        }
+      }
+    }
+    return transformedObjectWithArraysHandled;
+  });
   const jsonLines = jsonArray.map(JSON.stringify).join("\n");
 
   fs.writeFileSync(jsonlOutputPath, jsonLines, "utf-8");
