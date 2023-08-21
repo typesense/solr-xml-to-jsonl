@@ -49,6 +49,7 @@ function convertToNativeValue(value) {
 }
 
 async function writeJsonl(jsonData) {
+  const arrayFields = new Set();
   const jsonArray = jsonData.add.docs[0].doc.map((doc) => {
     const transformedEntries = doc.field.map((f) => [
       f.$.name,
@@ -62,6 +63,8 @@ async function writeJsonl(jsonData) {
       if (transformedObjectWithArraysHandled[key] === undefined) {
         transformedObjectWithArraysHandled[key] = value;
       } else {
+        // Multiple `field` entries, so treat as array
+        arrayFields.add(key);
         if (Array.isArray(transformedObjectWithArraysHandled[key])) {
           transformedObjectWithArraysHandled[key].push(value);
         } else {
@@ -74,6 +77,16 @@ async function writeJsonl(jsonData) {
     }
     return transformedObjectWithArraysHandled;
   });
+
+  // For any field values that are arrays, convert all values across all docs to arrays
+  for (const document of jsonArray) {
+    Object.keys(document).forEach((field) => {
+      if (arrayFields.has(field) && !Array.isArray(document[field])) {
+        document[field] = [document[field]];
+      }
+    });
+  }
+
   const jsonLines = jsonArray.map(JSON.stringify).join("\n");
 
   fs.writeFileSync(jsonlOutputPath, jsonLines, "utf-8");

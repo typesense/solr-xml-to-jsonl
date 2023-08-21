@@ -7,7 +7,6 @@
             <field name="description">A bottle of water</field>
             <field name="in_stock">true</field>
             <field name="category">Water</field>
-            <field name="category">Bottles</field>
         </doc>
         <doc>
             <field name="product_name">Lemonade</field>
